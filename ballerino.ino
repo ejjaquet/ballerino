@@ -10,6 +10,12 @@ int servoPin = 13;
 // Create a servo object 
 Servo Servo1; 
 
+// display
+#include "SevenSegmentTM1637.h"
+const byte PIN_CLK = 2;   // define CLK pin (any digital pin)
+const byte PIN_DIO = 3;   // define DIO pin (any digital pin)
+SevenSegmentTM1637    display(PIN_CLK, PIN_DIO);
+
 // Variables
 int buttonPushCounter = 0;   // counter for the number of button presses
 int buttonState = 0;         // current state of the button
@@ -22,6 +28,11 @@ void setup() {
   
   pinMode(led, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
+
+  // start display
+  display.begin();            // initializes the display
+  display.setBacklight(100);  // set the brightness to 100 %
+  display.print("0");      // display INIT on the display
 
   // We need to attach the servo to the used pin number 
   Servo1.attach(servoPin);
@@ -63,7 +74,10 @@ void ejectBall(int motorSpeed) {
     delay(5000); 
     // Make servo go to 180 degrees 
     Servo1.write(0); 
-      
+
+    // write to display
+    display.print(buttonPushCounter);
+
     Serial.println("on");
     Serial.print("number of button pushes: ");
     Serial.println(buttonPushCounter);
