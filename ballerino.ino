@@ -1,19 +1,30 @@
-// CONSTANTS
-int led = LED_BUILTIN;
+// Microswith and potmeter
 int BUTTON_PIN = 12;
 int POT_METER = A0;
 
+// Motors
+#define EnA 10
+#define EnB 5
+#define In1 9
+#define In2 8
+#define In3 7
+#define In4 6
+
 // Servo
 #include <Servo.h> 
+
 // Declare the Servo pin 
 int servoPin = 13; 
+
 // Create a servo object 
 Servo Servo1; 
 
 // display
 #include "SevenSegmentTM1637.h"
+
 const byte PIN_CLK = 2;   // define CLK pin (any digital pin)
 const byte PIN_DIO = 3;   // define DIO pin (any digital pin)
+
 SevenSegmentTM1637    display(PIN_CLK, PIN_DIO);
 
 // Variables
@@ -26,8 +37,15 @@ void setup() {
 
   Serial.begin(9600);
   
-  pinMode(led, OUTPUT);
   pinMode(BUTTON_PIN, INPUT);
+
+  // All motor control pins are outputs
+  pinMode(EnA, OUTPUT);
+  pinMode(EnB, OUTPUT);
+  pinMode(In1, OUTPUT);
+  pinMode(In2, OUTPUT);
+  pinMode(In3, OUTPUT);
+  pinMode(In4, OUTPUT);
 
   // start display
   display.begin();            // initializes the display
@@ -67,21 +85,37 @@ void loop() {
 void ejectBall(int motorSpeed) {
     buttonPushCounter++;
 
-    // start engine
+    // start engines
+
+    // turn on motor A
+    digitalWrite(In1, HIGH);
+    digitalWrite(In2, LOW);
+    // set speed
+    analogWrite(EnA, motorSpeed);
+    // turn on motor B
+    digitalWrite(In3, LOW);
+    digitalWrite(In4, HIGH);
+    // set speed
+    analogWrite(EnB, motorSpeed);
+    
+    // wait engines to get to speed
     delay(1000);
-    // Make servo go to 0 degrees 
+        
+    // Open the gate
     Servo1.write(90); 
+    
+    // wait for ball te pass
     delay(5000); 
-    // Make servo go to 180 degrees 
+
+    // stop engines
+    digitalWrite(In1, LOW);
+    digitalWrite(In2, LOW);  
+    digitalWrite(In3, LOW);
+    digitalWrite(In4, LOW);
+      
+    // close the gate 
     Servo1.write(0); 
 
     // write to display
-    display.print(buttonPushCounter);
-
-    Serial.println("on");
-    Serial.print("number of button pushes: ");
-    Serial.println(buttonPushCounter);
-    Serial.print("Pot meter value: ");
-    Serial.println(motorSpeed);
-  
+    display.print(buttonPushCounter);  
 }
