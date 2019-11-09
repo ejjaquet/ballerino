@@ -1,6 +1,6 @@
 // Microswith and potmeter
 int BUTTON_PIN = 12;
-int POT_METER = A0;
+int TOGGLE = 1;
 
 // Motors
 #define EnA 10
@@ -27,17 +27,35 @@ const byte PIN_DIO = 3;   // define DIO pin (any digital pin)
 
 SevenSegmentTM1637    display(PIN_CLK, PIN_DIO);
 
+// mp3 player
+#include "Arduino.h"
+#include "SoftwareSerial.h"
+#include "DFRobotDFPlayerMini.h"
+
+SoftwareSerial mySoftwareSerial(4, 11); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
+
 // Variables
 int buttonPushCounter = 0;   // counter for the number of button presses
 int buttonState = 0;         // current state of the button
 int lastButtonState = 0;     // previous state of the button
 int motorPower = 0;
+int playSound = 1;
 
 void setup() {
 
+  mySoftwareSerial.begin(9600);
   Serial.begin(9600);
   
   pinMode(BUTTON_PIN, INPUT);
+
+  if (!myDFPlayer.begin(mySoftwareSerial)) {  //Use softwareSerial to communicate with mp3.
+    Serial.println(F("Unable to begin:"));
+    Serial.println(F("1.Please recheck the connection!"));
+    Serial.println(F("2.Please insert the SD card!"));
+    while(true);
+  }
+  Serial.println(F("DFPlayer Mini online."));
 
   // All motor control pins are outputs
   pinMode(EnA, OUTPUT);
@@ -55,12 +73,18 @@ void setup() {
   // We need to attach the servo to the used pin number 
   Servo1.attach(servoPin);
   Servo1.write(0);
+
+  myDFPlayer.volume(20);  //Set volume value. From 0 to 30
+  myDFPlayer.play(1);  //Play the first mp3
 }
 
 void loop() {
 
   // read the pot meter, convert to DC motor values
-  int motorPower = analogRead(POT_METER) / 4;
+  int motorPower = analogRead(A0) / 4;
+
+  // read the sound toggle swicth
+  playSound - digitalRead(TOGGLE);
   
   // read the pushbutton input pin:
   buttonState = digitalRead(BUTTON_PIN);
@@ -69,6 +93,9 @@ void loop() {
   if (buttonState != lastButtonState) {
     // if the state has changed, increment the counter
     if (buttonState == HIGH) {
+     if(playSound == 1) {
+        myDFPlayer.play(2);
+     }
       // if the current state is HIGH then the button went from off to on:
       ejectBall(motorPower);
     } else {
@@ -93,19 +120,19 @@ void ejectBall(int motorSpeed) {
     // set speed
     analogWrite(EnA, motorSpeed);
     // turn on motor B
-    digitalWrite(In3, LOW);
-    digitalWrite(In4, HIGH);
+    digitalWrite(In3, HIGH);
+    digitalWrite(In4, LOW);
     // set speed
     analogWrite(EnB, motorSpeed);
     
     // wait engines to get to speed
-    delay(1000);
+    delay(800);
         
     // Open the gate
     Servo1.write(90); 
     
     // wait for ball te pass
-    delay(5000); 
+    delay(35000); 
 
     // stop engines
     digitalWrite(In1, LOW);
@@ -115,6 +142,11 @@ void ejectBall(int motorSpeed) {
       
     // close the gate 
     Servo1.write(0); 
+
+    // notify Joep of ball ejection
+     if(playSound == 1) {
+        myDFPlayer.play(3);
+     }
 
     // write to display
     display.print(buttonPushCounter);  
